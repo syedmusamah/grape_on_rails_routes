@@ -2,7 +2,7 @@ namespace :grape do
   desc "show API routes"
   task routes: :environment do
     grape_klasses = ObjectSpace.each_object(Class).select { |klass| klass < Grape::API }
-    routes = grape_klasses.flat_map(&:routes).uniq {|r| r.route_path}
+    routes = grape_klasses.flat_map(&:routes).uniq { |r| r.route_path + r.route_method.to_s }
     method_width, path_width, version_width, desc_width = widths(routes)
     routes.each do |api|
       method = api.route_method.to_s.rjust(method_width)
