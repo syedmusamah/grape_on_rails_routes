@@ -4,27 +4,26 @@ namespace :grape do
     mapping = method_mapping
 
     grape_klasses = ObjectSpace.each_object(Class).select { |klass| klass < Grape::API }
-    routes = grape_klasses.
-      flat_map(&:routes).
-      uniq { |r| r.send(mapping[:path]) + r.send(mapping[:method]).to_s }
+    routes = grape_klasses.map{|x|x.routes rescue nil}.select{|x|x.present?}.
+      uniq { |r| r.first.send(mapping[:path]) + r.first.send(mapping[:method]).to_s }
 
     method_width, path_width, version_width, desc_width = widths(routes, mapping)
 
     routes.each do |api|
-      method = api.send(mapping[:method]).to_s.rjust(method_width)
-      path = api.send(mapping[:path]).to_s.ljust(path_width)
-      version = api.send(mapping[:version]).to_s.ljust(version_width)
-      desc = api.send(mapping[:description]).to_s.ljust(desc_width)
+      method = api.first.send(mapping[:method]).to_s.rjust(method_width)
+      path = api.first.send(mapping[:path]).to_s.ljust(path_width)
+      version = api.first.send(mapping[:version]).to_s.ljust(version_width)
+      desc = api.first.send(mapping[:description]).to_s.ljust(desc_width)
       puts "     #{method}  |  #{path}  |  #{version}  |  #{desc}"
     end
   end
 
   def widths(routes, mapping)
     [
-      routes.map { |r| r.send(mapping[:method]).try(:length) }.compact.max || 0,
-      routes.map { |r| r.send(mapping[:path]).try(:length) }.compact.max || 0,
-      routes.map { |r| r.send(mapping[:version]).try(:length) }.compact.max || 0,
-      routes.map { |r| r.send(mapping[:description]).try(:length) }.compact.max || 0
+      routes.map { |r| r.first.send(mapping[:method]).try(:length) }.compact.max || 0,
+      routes.map { |r| r.first.send(mapping[:path]).try(:length) }.compact.max || 0,
+      routes.map { |r| r.first.send(mapping[:version]).try(:length) }.compact.max || 0,
+      routes.map { |r| r.first.send(mapping[:description]).try(:length) }.compact.max || 0
     ]
   end
 
