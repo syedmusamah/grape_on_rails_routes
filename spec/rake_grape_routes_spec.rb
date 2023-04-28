@@ -1,5 +1,6 @@
 require 'spec_helper'
 require 'open3'
+require 'json'
 
 RSpec.describe 'rake grape:routes' do
   let(:rails_app_dir) { File.expand_path('../dummy', __FILE__) }
@@ -7,7 +8,7 @@ RSpec.describe 'rake grape:routes' do
   it 'is included into list of all tasks' do
     stdout, status = Open3.capture2("cd #{rails_app_dir} && rake --tasks")
     expect(status).to be_success
-    expect(stdout).to include 'rake grape:routes                       # show API routes'
+    expect(stdout).to include 'rake grape:routes[format]               # show API routes'
   end
 
   it 'shows Grape API routes' do
@@ -24,5 +25,57 @@ RSpec.describe 'rake grape:routes' do
     expect(stdout).to include <<-EOF
         GET  |  /hello(.:format)                               |      |  Hello World!               
     EOF
+  end
+
+  it 'shows Grape API routes' do
+    stdout, status = Open3.capture2("cd #{rails_app_dir} && rake grape:routes[json]")
+    expect(status).to be_success
+    expect(JSON.parse(stdout)).to eq([
+      {
+        "method"=> "GET",
+        "path"=> "/hello(.:format)",
+        "version"=>"  ",
+        "desc"=>"Hello World!"
+      },
+      {
+        "method"=> "GET",
+        "path"=> "/api/:version/statuses/public_timeline(.json)",
+        "version"=> "v1",
+        "desc"=> "Return a public timeline."
+      },
+      {
+        "method"=> "GET",
+        "path"=>"/api/:version/statuses/home_timeline(.json)",
+        "version"=>"v1",
+        "desc"=>"Return a personal timeline."
+      },
+      {
+        "method"=> "GET",
+        "path"=>"/api/:version/statuses/:id(.json)",
+        "version"=> "v1",
+        "desc"=> "Return a status."
+      },
+      {
+        "method"=> "POST",
+        "path"=> "/api/:version/statuses(.json)",
+        "version"=> "v1",
+        "desc"=> "Create a status."
+      },
+      {
+        "method"=> "PUT",
+        "path"=> "/api/:version/statuses/:id(.json)",
+        "version"=> "v1",
+        "desc"=> "Update a status."
+      },
+      {
+        "method"=> "DELETE",
+        "path"=> "/api/:version/statuses/:id(.json)",
+        "version"=> "v1",
+        "desc"=> "Delete a status."
+      }
+    ]
+    )
+
+    expect(stdout).to include
   end
 end
