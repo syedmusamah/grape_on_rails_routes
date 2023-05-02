@@ -1,6 +1,6 @@
 namespace :grape do
   desc "show API routes"
-  task routes: :environment do
+  task :routes, %i[format] => :environment do|_, args|
     mapping = method_mapping
 
     grape_klasses = ObjectSpace.each_object(Class).select { |klass| klass < Grape::API }
@@ -8,8 +8,34 @@ namespace :grape do
       flat_map(&:routes).
       uniq { |r| r.send(mapping[:path]) + r.send(mapping[:method]).to_s }
 
+    format_and_print_json(routes, mapping) if args[:format] =='json'
+    format_and_print_bar_separated(routes, mapping) if args[:format] !='json'
+  end
+
+  def format_and_print_json(routes, mapping)
     method_width, path_width, version_width, desc_width = widths(routes, mapping)
 
+    routes_list = []
+    
+    routes.each do |api|
+      method = api.send(mapping[:method]).to_s.rjust(method_width)
+      path = api.send(mapping[:path]).to_s.ljust(path_width)
+      version = api.send(mapping[:version]).to_s.ljust(version_width)
+      desc = api.send(mapping[:description]).to_s.ljust(desc_width)
+      routes_hash = { 
+          method: method.strip,
+          path: path.strip,
+          version: version,
+          desc: desc.strip
+      }
+      routes_list.push(routes_hash)
+    end
+    puts JSON.pretty_generate(routes_list)
+  end
+
+  def format_and_print_bar_separated(routes, mapping)
+    method_width, path_width, version_width, desc_width = widths(routes, mapping)
+    
     routes.each do |api|
       method = api.send(mapping[:method]).to_s.rjust(method_width)
       path = api.send(mapping[:path]).to_s.ljust(path_width)
